@@ -1,0 +1,12 @@
+# Created using wingetcreate 1.10.3.0
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+
+PackageIdentifier: Orbmu2k.nvidiaProfileInspector
+PackageVersion: 2.4.0.31
+PackageLocale: en-US
+Publisher: Orbmu2k
+PackageName: nvidia Profile Inspector
+License: MIT
+ShortDescription: nvidia profile inspector
+ManifestType: defaultLocale
+ManifestVersion: 1.10.0

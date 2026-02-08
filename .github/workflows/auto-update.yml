@@ -1,0 +1,90 @@
+name: Auto Update Manifests
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  parse-packages:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.parse.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - id: parse
+        run: |
+          if [ ! -f packages.yml ]; then
+            echo "matrix=[]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          matrix=$(yq eval -o=json '.packages' packages.yml)
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
+  update:
+    needs: parse-packages
+    if: needs.parse-packages.outputs.matrix != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.parse-packages.outputs.matrix) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Komac
+        run: |
+          curl -sL https://github.com/russellbanks/Komac/releases/latest/download/komac-linux-x64 -o komac
+          chmod +x komac
+          sudo mv komac /usr/local/bin/
+
+      - name: Update ${{ matrix.package.id }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          
+          echo "🔍 Checking ${{ matrix.package.repo }}..."
+          latest=$(gh api repos/${{ matrix.package.repo }}/releases/latest)
+          tag=$(echo "$latest" | jq -r .tag_name)
+          ver="${tag#v}"
+          
+          echo "📌 Latest version: $ver"
+          
+          asset_url=$(echo "$latest" | jq -r --arg regex "${{ matrix.package.asset_regex }}" \
+            '.assets[] | select(.name | test($regex)) | .browser_download_url' | head -1)
+          
+          if [ -z "$asset_url" ]; then
+            echo "❌ No matching asset"
+            exit 0
+          fi
+          
+          echo "📥 Asset URL: $asset_url"
+          
+          manifest_path="manifests/${{ matrix.package.id }}"
+          if [ ! -d "$manifest_path" ]; then
+            echo "⚠️ Manifest not found. Create it locally first."
+            exit 0
+          fi
+          
+          echo "🔄 Updating manifest..."
+          komac update ${{ matrix.package.id }} \
+            --version "$ver" \
+            --urls "$asset_url" \
+            --submit=false
+          
+          echo "✅ Updated ${{ matrix.package.id }} to $ver"
+
+      - name: Commit & Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifests/
+          git diff --staged --quiet || git commit -m "chore: update manifests [skip ci]"
+          git push
