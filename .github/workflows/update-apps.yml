@@ -1,21 +1,30 @@
 name: Update Manifests (Komac)
+
 on:
   schedule:
     - cron: '17 * * * *' 
-  workflow_dispatch:
+  workflow_dispatch: 
 
 permissions:
   contents: write
 
 jobs:
-  update-apps:
+  komac-update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.KOMAC_TOKEN }}
+       
 
-      - name: Run Komac (Auto Scan)
+      - name: Run Komac (Update All)
         uses: michidk/run-komac@v2
+        env:
+          
+          KOMAC_TOKEN: ${{ secrets.KOMAC_TOKEN }}
         with:
-          args: update --repo ${{ github.repository }} --token ${{ secrets.KOMAC_TOKEN }} --submit-pr false --commit-direct true
+          # 👇 [수정됨] 에러 원인이었던 '--repo' 삭제했습니다.
+          # 이제 현재 폴더를 자동으로 인식해서 업데이트합니다.
+          args: >-
+            update
+            --token ${{ secrets.KOMAC_TOKEN }}
+            --submit-pr false
+            --commit-direct true
