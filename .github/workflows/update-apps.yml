@@ -19,9 +19,9 @@ jobs:
         with:
           # 👇[To Edit] List of apps to manage (one per line: packageID sourceURL)
           packages: |
-            Orbmu2k.nvidiaProfileInspector https://github.com/Orbmu2k/nvidiaProfileInspector
-            13xforever.vkdiag https://github.com/13xforever/vkdiag
-            limbo666.DesktopFences https://github.com/limbo666/DesktopFences
+            Orbmu2k.nvidiaProfileInspector
+            13xforever.vkdiag
+            limbo666.DesktopFences
             
           # Save YAML to my repository
           target_repository: ${{ github.repository }}
