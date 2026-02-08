@@ -23,21 +23,18 @@ jobs:
           curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ_VER}/yq_linux_amd64" -o /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
           yq --version
+          jq --version
 
       - id: parse
-        name: read packages.yml -> matrix json
         run: |
           set -euo pipefail
-
           if [ ! -f packages.yml ]; then
             echo "matrix=[]" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # packages.yml의 .packages를 JSON array로 변환
           matrix="$(yq -o=json '.packages' packages.yml | jq -c '.')"
 
-          # GITHUB_OUTPUT은 멀티라인 안전 포맷으로 써야 함
           {
             echo "matrix<<EOF"
             echo "$matrix"
@@ -66,8 +63,6 @@ jobs:
           repo="${{ matrix.package.repo }}"
           regex="${{ matrix.package.asset_regex }}"
 
-          echo "checking repo=$repo regex=$regex"
-
           latest="$(gh api "repos/${repo}/releases/latest")"
           tag="$(echo "$latest" | jq -r .tag_name)"
           ver="${tag#v}"
@@ -76,7 +71,6 @@ jobs:
             '.assets[] | select(.name | test($regex)) | .browser_download_url' | head -1)"
 
           if [ -z "$asset_url" ]; then
-            echo "no matching asset. skip."
             echo "skip=1" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -85,16 +79,46 @@ jobs:
           echo "asset_url=$asset_url" >> "$GITHUB_OUTPUT"
           echo "skip=0" >> "$GITHUB_OUTPUT"
 
-      - name: run komac update
+      - name: update local manifests (url/version/sha256)
         if: steps.resolve.outputs.skip != '1'
-        uses: michidk/run-komac@v2
-        with:
-          # run-komac은 komac 설치 후 args 실행해주는 액션 [web:107]
-          args: >-
-            update ${{ matrix.package.id }}
-            --version ${{ steps.resolve.outputs.ver }}
-            --urls ${{ steps.resolve.outputs.asset_url }}
-            --token ${{ secrets.KOMAC_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          id="${{ matrix.package.id }}"
+          ver="${{ steps.resolve.outputs.ver }}"
+          url="${{ steps.resolve.outputs.asset_url }}"
+          dir="manifests/${id}"
+
+          if [ ! -d "$dir" ]; then
+            echo "manifest dir not found: $dir (skip)"
+            exit 0
+          fi
+
+          mkdir -p .tmp
+          file=".tmp/installer"
+          curl -fsSL "$url" -o "$file"
+          sha="$(sha256sum "$file" | awk '{print $1}')"
+
+          echo "updating $id -> $ver"
+          echo "url=$url"
+          echo "sha=$sha"
+
+          # manifests/<id> 아래 yaml 전부에서 보이는 필드만 갱신
+          shopt -s globstar nullglob
+          for f in "$dir"/**/*.yml "$dir"/**/*.yaml; do
+            # PackageVersion
+            yq -i ".PackageVersion = \"$ver\" | .PackageVersion style=\"\"" "$f" 2>/dev/null || true
+
+            # Installers[].InstallerUrl / InstallerSha256
+            yq -i '
+              (.Installers[]? | select(has("InstallerUrl")) | .InstallerUrl) = strenv(URL) |
+              (.Installers[]? | select(has("InstallerSha256")) | .InstallerSha256) = strenv(SHA)
+            ' "$f" 2>/dev/null || true
+          done
+
+        env:
+          URL: ${{ steps.resolve.outputs.asset_url }}
+          SHA: ${{ steps.resolve.outputs.sha }}
 
       - name: commit & push (if changed)
         if: steps.resolve.outputs.skip != '1'
@@ -104,7 +128,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add manifests/ || true
-
           if git diff --staged --quiet; then
             echo "no changes"
             exit 0
