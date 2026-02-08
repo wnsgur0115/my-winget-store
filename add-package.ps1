@@ -13,9 +13,10 @@ Write-Host "=== Winget Package Adder ===" -ForegroundColor Green
 Write-Host ""
 
 if (-not (Test-Path "packages.yml")) {
-    @"
+    $init = @"
 packages: []
-"@ | Set-Content "packages.yml" -Encoding UTF8
+"@
+    Set-Content -Path "packages.yml" -Value $init -Encoding UTF8NoBOM
     Write-Host "✅ Created packages.yml" -ForegroundColor Yellow
 }
 
@@ -165,7 +166,7 @@ if ($yamlContent -match 'packages:\s*\[\s*\]') {
     $yamlContent += $newEntry
 }
 
-$yamlContent | Set-Content "packages.yml" -Encoding UTF8
+Set-Content -Path "packages.yml" -Value $yamlContent -Encoding UTF8NoBOM
 
 Write-Host "✅ Added successfully!" -ForegroundColor Green
 Write-Host ""

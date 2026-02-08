@@ -1,6 +1,6 @@
 ﻿packages:
   - id: Orbmu2k.nvidiaProfileInspector
     repo: Orbmu2k/nvidiaProfileInspector
-    asset_regex: '\.zip
+    asset_regex: '\.zip'
 
 
