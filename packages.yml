@@ -1,9 +1,4 @@
-﻿packages:
+packages:
   - id: Orbmu2k.nvidiaProfileInspector
     repo: Orbmu2k/nvidiaProfileInspector
     asset_regex: '\.zip$'
-<<<<<<< HEAD
-
-
-=======
->>>>>>> ebff06b591a9a1e893857aa02386b0ce129c2a75
