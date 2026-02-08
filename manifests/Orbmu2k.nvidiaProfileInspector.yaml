@@ -1,0 +1,16 @@
+PackageIdentifier: Orbmu2k.nvidiaProfileInspector
+PackageVersion: 0.0.0.1
+PackageLocale: en-US
+Publisher: Orbmu2k
+PackageName: Nvidia Profile Inspector
+License: MIT
+ShortDescription: Tool for modifying Nvidia driver profiles.
+Moniker: nvidianspector
+PackageUrl: https://github.com/Orbmu2k/nvidiaProfileInspector
+Installers:
+  - Architecture: x64
+    # Manually input links into Komac, serving as seed files
+    InstallerUrl: https://github.com/Orbmu2k/nvidiaProfileInspector/releases/download/2.4.0.4/nvidiaProfileInspector.zip
+    InstallerType: zip
+ManifestType: singleton
+ManifestVersion: 1.0.0
