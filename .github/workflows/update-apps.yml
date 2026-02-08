@@ -1,33 +1,30 @@
 name: Update Manifests (Komac)
 on:
   schedule:
-    # Run at 17 minutes past every hour to avoid peak load.
-    - cron: '17 * * * *'
+    - cron: '17 * * * *'   # Run at 17 minutes past every hour to avoid peak load.
   workflow_dispatch: # Activate manual run button
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
-  komac-update:
+  update-apps:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 👇 [Add here!!] id, original repo url
+        package:
+          - { id: Orbmu2k.nvidiaProfileInspector, repo: Orbmu2k/nvidiaProfileInspector }
+          - { id: 13xforever.vkdiag, repo: 13xforever/vkdiag }
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run Komac
-        uses: RussellBanks/Komac@v2
+      - name: Update ${{ matrix.package.id }}
+        uses: michidk/winget-updater@v1
         with:
-          # 👇[To Edit] List of apps to manage (one per line: packageID sourceURL)
-          packages: |
-            Orbmu2k.nvidiaProfileInspector
-            13xforever.vkdiag
-            limbo666.DesktopFences
-            
-          # Save YAML to my repository
-          target_repository: ${{ github.repository }}
-          manifests_path: 'manifests'
-          submit_pr: false
-          commit_direct: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+          identifier: ${{ matrix.package.id }}
+          repo: ${{ matrix.package.repo }}
+          komac-token: ${{ secrets.GITHUB_TOKEN }}
