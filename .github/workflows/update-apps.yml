@@ -18,7 +18,7 @@ jobs:
         package:
           - { id: Orbmu2k.nvidiaProfileInspector, repo: Orbmu2k/nvidiaProfileInspector }
           - { id: 13xforever.vkdiag, repo: 13xforever/vkdiag }
-
+          - { id: limbo666.DesktopFences, repo: limbo666/DesktopFences }
     steps:
       - uses: actions/checkout@v4
 
