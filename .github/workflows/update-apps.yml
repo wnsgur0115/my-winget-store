@@ -1,0 +1,32 @@
+name: Update Manifests (Komac)
+on:
+  schedule:
+    # Run at 17 minutes past every hour to avoid peak load.
+    - cron: '17 * * * *'
+  workflow_dispatch: # Activate manual run button
+
+permissions:
+  contents: write
+
+jobs:
+  komac-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Komac
+        uses: RussellBanks/Komac@v2
+        with:
+          # 👇[To Edit] List of apps to manage (one per line: packageID sourceURL)
+          packages: |
+            My.NvidiaInspector https://github.com/Orbmu2k/nvidiaProfileInspector
+            My.VkDiag https://github.com/13xforever/vkdiag
+            My.DesktopFences https://github.com/limbo666/DesktopFences/releases/tag/2.5.4.188
+            
+          # Save YAML to my repository
+          target_repository: ${{ github.repository }}
+          manifests_path: 'manifests'
+          submit_pr: false
+          commit_direct: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
