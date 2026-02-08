@@ -1,4 +1,4 @@
-name: Auto Update Manifests
+name: auto update manifests
 
 on:
   schedule:
@@ -15,16 +15,34 @@ jobs:
       matrix: ${{ steps.parse.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
-      
-      - id: parse
+
+      - name: install yq
         run: |
+          set -euo pipefail
+          YQ_VER="v4.45.1"
+          curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ_VER}/yq_linux_amd64" -o /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+          yq --version
+
+      - id: parse
+        name: read packages.yml -> matrix json
+        run: |
+          set -euo pipefail
+
           if [ ! -f packages.yml ]; then
-            echo "matrix=[]" >> $GITHUB_OUTPUT
+            echo "matrix=[]" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          
-          matrix=$(yq eval -o=json '.packages' packages.yml | jq -c .)
-          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
+          # packages.yml의 .packages를 JSON array로 변환
+          matrix="$(yq -o=json '.packages' packages.yml | jq -c '.')"
+
+          # GITHUB_OUTPUT은 멀티라인 안전 포맷으로 써야 함
+          {
+            echo "matrix<<EOF"
+            echo "$matrix"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
   update:
     needs: parse-packages
@@ -38,53 +56,59 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Komac
-        run: |
-          curl -sL https://github.com/russellbanks/Komac/releases/latest/download/komac-linux-x64 -o komac
-          chmod +x komac
-          sudo mv komac /usr/local/bin/
-
-      - name: Update ${{ matrix.package.id }}
+      - id: resolve
+        name: resolve latest release + asset url
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
-          
-          echo "🔍 Checking ${{ matrix.package.repo }}..."
-          latest=$(gh api repos/${{ matrix.package.repo }}/releases/latest)
-          tag=$(echo "$latest" | jq -r .tag_name)
-          ver="${tag#v}"
-          
-          echo "📌 Latest version: $ver"
-          
-          asset_url=$(echo "$latest" | jq -r --arg regex "${{ matrix.package.asset_regex }}" \
-            '.assets[] | select(.name | test($regex)) | .browser_download_url' | head -1)
-          
-          if [ -z "$asset_url" ]; then
-            echo "❌ No matching asset"
-            exit 0
-          fi
-          
-          echo "📥 Asset URL: $asset_url"
-          
-          manifest_path="manifests/${{ matrix.package.id }}"
-          if [ ! -d "$manifest_path" ]; then
-            echo "⚠️ Manifest not found. Create it locally first."
-            exit 0
-          fi
-          
-          echo "🔄 Updating manifest..."
-          komac update ${{ matrix.package.id }} \
-            --version "$ver" \
-            --urls "$asset_url" \
-            --submit=false
-          
-          echo "✅ Updated ${{ matrix.package.id }} to $ver"
+          set -euo pipefail
 
-      - name: Commit & Push
+          repo="${{ matrix.package.repo }}"
+          regex="${{ matrix.package.asset_regex }}"
+
+          echo "checking repo=$repo regex=$regex"
+
+          latest="$(gh api "repos/${repo}/releases/latest")"
+          tag="$(echo "$latest" | jq -r .tag_name)"
+          ver="${tag#v}"
+
+          asset_url="$(echo "$latest" | jq -r --arg regex "$regex" \
+            '.assets[] | select(.name | test($regex)) | .browser_download_url' | head -1)"
+
+          if [ -z "$asset_url" ]; then
+            echo "no matching asset. skip."
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "ver=$ver" >> "$GITHUB_OUTPUT"
+          echo "asset_url=$asset_url" >> "$GITHUB_OUTPUT"
+          echo "skip=0" >> "$GITHUB_OUTPUT"
+
+      - name: run komac update
+        if: steps.resolve.outputs.skip != '1'
+        uses: michidk/run-komac@v2
+        with:
+          # run-komac은 komac 설치 후 args 실행해주는 액션 [web:107]
+          args: >-
+            update ${{ matrix.package.id }}
+            --version ${{ steps.resolve.outputs.ver }}
+            --urls ${{ steps.resolve.outputs.asset_url }}
+            --token ${{ secrets.KOMAC_TOKEN }}
+
+      - name: commit & push (if changed)
+        if: steps.resolve.outputs.skip != '1'
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add manifests/
-          git diff --staged --quiet || git commit -m "chore: update manifests [skip ci]"
+
+          git add manifests/ || true
+
+          if git diff --staged --quiet; then
+            echo "no changes"
+            exit 0
+          fi
+
+          git commit -m "chore: update ${{ matrix.package.id }} -> ${{ steps.resolve.outputs.ver }}"
           git push
