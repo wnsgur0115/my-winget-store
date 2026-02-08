@@ -23,7 +23,7 @@ jobs:
             exit 0
           fi
           
-          matrix=$(yq eval -o=json '.packages' packages.yml)
+          matrix=$(yq eval -o=json '.packages' packages.yml | jq -c .)
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
   update:
