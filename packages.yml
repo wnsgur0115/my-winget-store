@@ -2,3 +2,9 @@ packages:
   - id: Orbmu2k.nvidiaProfileInspector
     repo: Orbmu2k/nvidiaProfileInspector
     asset_regex: '\.zip$'
+  - id: 13xforever.vkdiag
+    repo: 13xforever/vkdiag
+    asset_regex: '\.exe$'
+  - id: 13xforever.vkdiag
+    repo: 13xforever/vkdiag
+    asset_regex: '\.exe$'

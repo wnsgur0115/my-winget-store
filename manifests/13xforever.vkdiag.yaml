@@ -1,0 +1,13 @@
+﻿PackageIdentifier: 13xforever.vkdiag
+PackageVersion: 0.0.0.0
+PackageName: vkdiag
+Publisher: 13xforever
+Moniker: vkdiag
+PackageUrl: https://github.com/13xforever/vkdiag
+ShortDescription: Auto-generated manifest for vkdiag
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/13xforever/vkdiag/releases/download/v0.0.0/placeholder.zip
+    InstallerType: zip
+ManifestType: singleton
+ManifestVersion: 1.0.0

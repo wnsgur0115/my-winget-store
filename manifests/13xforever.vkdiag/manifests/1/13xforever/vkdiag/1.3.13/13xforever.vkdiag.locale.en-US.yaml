@@ -1,0 +1,12 @@
+# Created using wingetcreate 1.10.3.0
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+
+PackageIdentifier: 13xforever.vkdiag
+PackageVersion: 1.3.13
+PackageLocale: en-US
+Publisher: 13xforever
+PackageName: Vkdiag
+License: MIT
+ShortDescription: Rudimentary vulkan diagnostics tool for Windows
+ManifestType: defaultLocale
+ManifestVersion: 1.10.0
