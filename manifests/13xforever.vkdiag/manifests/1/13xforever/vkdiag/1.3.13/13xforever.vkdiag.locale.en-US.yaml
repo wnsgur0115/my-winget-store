@@ -10,3 +10,4 @@ License: MIT
 ShortDescription: Rudimentary vulkan diagnostics tool for Windows
 ManifestType: defaultLocale
 ManifestVersion: 1.10.0
+Installers: []
