@@ -2,7 +2,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
 
 PackageIdentifier: Orbmu2k.nvidiaProfileInspector
-PackageVersion: 2.4.0.31
+PackageVersion: 3.0.2.1
 InstallerType: zip
 NestedInstallerType: portable
 NestedInstallerFiles:
@@ -10,7 +10,7 @@ NestedInstallerFiles:
     PortableCommandAlias: nvidiaProfileInspector
 Installers:
   - Architecture: x64
-    InstallerUrl: https://github.com/Orbmu2k/nvidiaProfileInspector/releases/download/2.4.0.31/nvidiaProfileInspector.zip
+    InstallerUrl: https://github.com/Orbmu2k/nvidiaProfileInspector/releases/download/v3.0.2.1/nvidiaProfileInspector.zip
     InstallerSha256: ""
 ManifestType: installer
 ManifestVersion: 1.10.0
